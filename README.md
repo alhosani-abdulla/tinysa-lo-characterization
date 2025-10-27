@@ -2,6 +2,26 @@
 
 Automated power measurement system for characterizing ADF4351-based Local Oscillator output power across frequency sweeps using the tinySA Ultra spectrum analyzer.
 
+## Project Structure
+
+```
+tinysa-lo-characterization/
+├── controllers/           # Hardware interface modules
+│   ├── arduino_controller.py    # Arduino/ADF4351 serial interface
+│   └── tinysa_controller.py     # tinySA Ultra measurement wrapper
+├── scripts/              # Executable scripts
+│   ├── lo_power_sweep.py        # Main automated measurement
+│   ├── test_lo_sweep.py         # Visual sweep test (no measurements)
+│   └── test_system.py           # Hardware connectivity test
+├── utils/                # Utilities
+│   └── plot_results.py          # Data visualization
+├── results/              # Output data directory
+├── config.yaml           # Default configuration
+├── examples.py           # Usage examples
+├── requirements.txt      # Python dependencies
+└── README.md            # This file
+```
+
 ## Overview
 
 This project automates the measurement of LO output power at 301 frequency points (900-960 MHz, 0.2 MHz steps) by coordinating:
@@ -17,11 +37,11 @@ This project automates the measurement of LO output power at 301 frequency point
 │  + ADF4351  │                │   Computer   │
 │     (LO)    │                │  (Python)    │
 └──────┬──────┘                │              │
-       │ RF Cable               │              │
-       │                        │              │
-       ▼                   USB  │              │
+       │ RF Cable/             │              │
+       │ Connector             │              │
+       ▼                   USB │              │
 ┌─────────────┐◄───────────────┤              │
-│ tinySA Ultra│                 └──────────────┘
+│ tinySA Ultra│                └──────────────┘
 │  (Spectrum  │
 │  Analyzer)  │
 └─────────────┘
@@ -57,13 +77,13 @@ Upload the `ManualControl.ino` sketch from the `adf4351-controller` repository t
 ### Basic Power Sweep
 
 ```bash
-python lo_power_sweep.py --arduino /dev/cu.usbserial-14110 --tinysa auto --output power_sweep.csv
+python scripts/lo_power_sweep.py --arduino /dev/cu.usbserial-14110 --tinysa auto --output power_sweep.csv
 ```
 
 ### With Custom Parameters
 
 ```bash
-python lo_power_sweep.py \
+python scripts/lo_power_sweep.py \
     --arduino /dev/cu.usbserial-14110 \
     --tinysa /dev/cu.usbserial-23456 \
     --freq-start 900.0 \
@@ -77,7 +97,7 @@ python lo_power_sweep.py \
 ### Dual Power Measurement (for calibration)
 
 ```bash
-python lo_power_sweep.py \
+python scripts/lo_power_sweep.py \
     --arduino /dev/cu.usbserial-14110 \
     --tinysa auto \
     --dual-power +5 -4 \

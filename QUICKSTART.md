@@ -28,7 +28,7 @@
 Run the test script to verify everything works:
 
 ```bash
-python test_system.py
+python scripts/test_system.py
 ```
 
 This will:
@@ -41,19 +41,19 @@ This will:
 
 ### Basic sweep (uses config.yaml defaults):
 ```bash
-python lo_power_sweep.py
+python scripts/lo_power_sweep.py
 ```
 
 ### Specify ports explicitly:
 ```bash
-python lo_power_sweep.py \
+python scripts/lo_power_sweep.py \
     --arduino /dev/cu.usbserial-14110 \
     --tinysa auto
 ```
 
 ### Custom frequency range:
 ```bash
-python lo_power_sweep.py \
+python scripts/lo_power_sweep.py \
     --freq-start 920 \
     --freq-stop 940 \
     --freq-step 0.5 \
@@ -62,7 +62,7 @@ python lo_power_sweep.py \
 
 ### Dual power calibration (like your filterbank setup):
 ```bash
-python lo_power_sweep.py \
+python scripts/lo_power_sweep.py \
     --dual-power +5 -4 \
     --output-dir calibration_data/
 ```
@@ -103,7 +103,7 @@ averaging: 4        # 1, 4, or 16
 ls /dev/cu.*
 
 # If you see your device, specify it:
-python lo_power_sweep.py --arduino /dev/cu.usbserial-XXXXX
+python scripts/lo_power_sweep.py --arduino /dev/cu.usbserial-XXXXX
 ```
 
 ### "tinySA not connecting"
