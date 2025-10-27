@@ -21,8 +21,11 @@ from typing import List, Dict, Optional
 import pandas as pd
 import numpy as np
 
-from arduino_controller import ArduinoLOController, find_arduino_ports
-from tinysa_controller import TinySAController
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from controllers.arduino_controller import ArduinoLOController, find_arduino_ports
+from controllers.tinysa_controller import TinySAController
 
 
 class LOPowerSweep:

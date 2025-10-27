@@ -7,8 +7,8 @@ modules directly for custom measurement workflows.
 """
 
 import time
-from arduino_controller import ArduinoLOController
-from tinysa_controller import TinySAController
+from controllers.arduino_controller import ArduinoLOController
+from controllers.tinysa_controller import TinySAController
 
 
 def example_single_measurement():

@@ -10,11 +10,11 @@ import sys
 import time
 from pathlib import Path
 
-# Add current directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from arduino_controller import ArduinoLOController, find_arduino_ports
-from tinysa_controller import TinySAController
+from controllers.arduino_controller import ArduinoLOController, find_arduino_ports
+from controllers.tinysa_controller import TinySAController
 
 
 def test_arduino(port: str) -> bool:
