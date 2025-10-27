@@ -1,6 +1,8 @@
-# tinySA Ultra - Local Oscillator Power Characterization
+# tinySA-LO Characterization
 
-Automated power measurement system for characterizing ADF4351-based Local Oscillator output power across frequency sweeps using the tinySA Ultra spectrum analyzer.
+Automated power measurement system for characterizing ADF4351-based Local Oscillator output power using tinySA Ultra spectrum analyzer.
+
+**Quick Start:** `python scripts/test_lo_sweep.py` to verify hardware, then `python scripts/lo_power_sweep.py` for measurements.
 
 ## Project Structure
 
@@ -24,10 +26,32 @@ tinysa-lo-characterization/
 
 ## Overview
 
-This project automates the measurement of LO output power at 301 frequency points (900-960 MHz, 0.2 MHz steps) by coordinating:
-- **Arduino/ADF4351**: Generates RF signal at commanded frequency
-- **tinySA Ultra**: Measures peak power at that frequency
-- **Python Controller**: Orchestrates the measurement sequence and data collection
+Automates LO power measurements at 301 frequency points (900-960 MHz, 0.2 MHz steps) by coordinating:
+- **Arduino/ADF4351**: Generates RF at commanded frequency
+- **tinySA Ultra**: Measures peak power
+- **Python Controller**: Orchestrates measurements and saves data
+
+## Installation
+
+**Requirements:** Python 3.10+ (3.11 recommended)
+
+```bash
+# Clone repository
+git clone https://github.com/YOUR_USERNAME/tinysa-lo-characterization.git
+cd tinysa-lo-characterization
+
+# Create virtual environment
+python3.11 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**Arduino Setup:**
+1. Upload `ManualControl.ino` from [adf4351-controller](https://github.com/alhosani-abdulla/adf4351-controller) to your Arduino
+2. Verify with Serial Monitor (115200 baud) - try commands: `s`, `f 900`, `p 5`
 
 ## Hardware Setup
 
@@ -37,50 +61,47 @@ This project automates the measurement of LO output power at 301 frequency point
 │  + ADF4351  │                │   Computer   │
 │     (LO)    │                │  (Python)    │
 └──────┬──────┘                │              │
-       │ RF Cable/             │              │
-       │ Connector             │              │
+       │ RF Cable               │              │
        ▼                   USB │              │
 ┌─────────────┐◄───────────────┤              │
 │ tinySA Ultra│                └──────────────┘
-│  (Spectrum  │
-│  Analyzer)  │
 └─────────────┘
 ```
 
-### Connections:
-1. **Arduino to Computer**: USB serial connection (for frequency commands)
-2. **tinySA to Computer**: USB serial connection (for power measurements)
-3. **LO to tinySA**: RF cable from ADF4351 output to tinySA input
+**Connections:**
+1. Arduino to Computer: USB serial (frequency commands)
+2. tinySA to Computer: USB serial (power measurements)  
+3. LO to tinySA: RF cable from ADF4351 output to tinySA input
 
-## Requirements
+## Quick Start
 
+### 1. Test System Connectivity
 ```bash
-pip install tsapython pyserial numpy pandas
+python scripts/test_system.py
+```
+Verifies Arduino and tinySA are connected and responding.
+
+### 2. Visual Sweep Test (No Measurements)
+```bash
+python scripts/test_lo_sweep.py --dwell 1.0
+```
+Sweeps LO through frequencies - watch signal on spectrum analyzer to verify hardware.
+
+### 3. Run Automated Measurement
+```bash
+python scripts/lo_power_sweep.py
+```
+Measures power at all 301 frequencies and saves to CSV.
+
+## Usage Examples
+
+### Basic Measurement
+```bash
+# Uses config.yaml defaults
+python scripts/lo_power_sweep.py
 ```
 
-Optional for FITS file support:
-```bash
-pip install astropy
-```
-
-## Arduino Preparation
-
-Upload the `ManualControl.ino` sketch from the `adf4351-controller` repository to your Arduino. This sketch accepts serial commands to set frequencies.
-
-### Key Commands:
-- `f <frequency>`: Set frequency in MHz (e.g., `f 900.0`)
-- `p <power>`: Set output power in dBm (e.g., `p +5` or `p -4`)
-- `s`: Print current status
-
-## Usage
-
-### Basic Power Sweep
-
-```bash
-python scripts/lo_power_sweep.py --arduino /dev/cu.usbserial-14110 --tinysa auto --output power_sweep.csv
-```
-
-### With Custom Parameters
+### Custom Parameters
 
 ```bash
 python scripts/lo_power_sweep.py \
@@ -91,99 +112,108 @@ python scripts/lo_power_sweep.py \
     --freq-step 0.2 \
     --power +5 \
     --settling-time 0.1 \
-    --output results/sweep_+5dBm.csv
-```
-
-### Dual Power Measurement (for calibration)
-
 ```bash
+# Specify ports and custom range
 python scripts/lo_power_sweep.py \
     --arduino /dev/cu.usbserial-14110 \
     --tinysa auto \
-    --dual-power +5 -4 \
-    --output-dir results/
+    --freq-start 920 \
+    --freq-stop 940 \
+    --freq-step 0.5 \
+    --power +5 \
+    --output results/sweep_920-940.csv
+```
+
+### Dual Power Calibration
+```bash
+# Measure at two power levels
+python scripts/lo_power_sweep.py --dual-power +5 -10
+```
+Creates two files: `results/lo_power_sweep_TIMESTAMP_+5dBm.csv` and `..._-10dBm.csv`
+
+### Plotting Results
+```bash
+python utils/plot_results.py results/sweep_+5dBm.csv
+```
+
+## Configuration
+
+Edit `config.yaml` for default settings:
+
+```yaml
+arduino_port: /dev/cu.usbserial-14110
+tinysa_port: auto
+freq_start: 900.0   # MHz
+freq_stop: 960.0    # MHz  
+freq_step: 0.2      # MHz
+lo_power: +5        # dBm
+settling_time: 0.1  # seconds
 ```
 
 ## Output Format
 
-### CSV Format
+CSV with columns: `frequency_mhz`, `power_dbm`, `timestamp`, `lo_power_setting`
+
 ```csv
 frequency_mhz,power_dbm,timestamp,lo_power_setting
-900.0,-12.34,2025-10-26T10:30:45.123,+5
-900.2,-12.28,2025-10-26T10:30:45.234,+5
+900.0,-12.34,2025-10-26T10:30:45,+5
+900.2,-12.28,2025-10-26T10:30:46,+5
 ...
-```
-
-### FITS Format (optional)
-Binary table with columns:
-- `FREQUENCY`: Frequency in MHz
-- `POWER`: Measured power in dBm
-- `TIMESTAMP`: ISO 8601 timestamp
-- `LO_SETTING`: LO output power setting
-
-## Project Structure
-
-```
-tinysa-lo-characterization/
-├── README.md                    # This file
-├── requirements.txt             # Python dependencies
-├── lo_power_sweep.py           # Main measurement script
-├── arduino_controller.py       # Arduino serial interface
-├── tinysa_controller.py        # tinySA measurement interface
-├── config.yaml                 # Default configuration
-└── results/                    # Output directory (created automatically)
-```
-
-## Configuration File
-
-Create `config.yaml` to store default settings:
-
-```yaml
-# Serial Ports
-arduino_port: /dev/cu.usbserial-14110
-tinysa_port: auto  # or specific port
-
-# Frequency Sweep
-freq_start: 900.0   # MHz
-freq_stop: 960.0    # MHz
-freq_step: 0.2      # MHz
-
-# LO Settings
-lo_power: +5        # dBm
-
-# Timing
-settling_time: 0.1  # seconds (wait after frequency change)
-measurement_time: 0.05  # seconds per tinySA measurement
-
-# tinySA Settings
-span: 1.0           # MHz (measurement span around target frequency)
-rbw: auto           # Resolution bandwidth
 ```
 
 ## Troubleshooting
 
-### Arduino not found
+**Arduino not found:**
 ```bash
 ls /dev/cu.* | grep usb
+# Then specify: --arduino /dev/cu.usbserial-XXXXX
 ```
 
-### tinySA not found
+**tinySA not connecting:**
 ```bash
-python -c "from tsapython import tinySA; tsa = tinySA(); tsa.autoconnect()"
+pip install --upgrade tsapython
+python -c "from tsapython import tinySA; t=tinySA(); t.autoconnect(); print('OK')"
 ```
 
-### Frequency mismatch
-Ensure your Arduino is running `ManualControl.ino` and responding to serial commands. Test with:
-```bash
-python -c "import serial; s = serial.Serial('/dev/cu.usbserial-14110', 115200); s.write(b's\\n'); print(s.readline())"
-```
+**Port busy error:**
+Close Arduino IDE Serial Monitor and other programs using the port.
+
+**Low/inconsistent readings:**
+- Check RF cable connections
+- Increase `--settling-time` (default 0.1s) to let LO stabilize
+- Verify tinySA input attenuation settings
+
+## Arduino Commands
+
+The ManualControl.ino sketch accepts:
+- `f <freq>` - Set frequency in MHz (e.g., `f 925.5`)
+- `p <power>` - Set power in dBm (e.g., `p +5` or `p -10`)  
+- `s` - Print current status
+
+## Project Details
+
+**Measurement specs:**
+- Default range: 900-960 MHz (301 points, 0.2 MHz steps)
+- Configurable frequency range, step size, and power levels
+- Automatic port detection for Arduino and tinySA
+- Progress tracking and error handling
+
+**Output:**
+- CSV files with timestamp
+- Optional FITS format (requires astropy)
+- Automatic results/ directory creation
+
+**Use cases:**
+- LO power calibration for radio astronomy receivers
+- Filter bank characterization
+- Component testing and validation
 
 ## References
 
-- [tinySA Ultra Documentation](https://tinysa.org/wiki/)
-- [tsapython GitHub](https://github.com/LC-Linkous/tinySA_python)
-- [ADF4351 Controller](../adf4351-controller/)
+- [tinySA Ultra](https://tinysa.org/wiki/)
+- [tsapython Library](https://github.com/LC-Linkous/tinySA_python)
+- [ADF4351 Controller](https://github.com/alhosani-abdulla/adf4351-controller)
 
 ## License
 
-MIT License
+MIT
