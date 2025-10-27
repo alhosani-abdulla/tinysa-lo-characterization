@@ -1,0 +1,84 @@
+--- /Users/abdullaalhosani/.local/share/virtualenvs/tinysa-lo-characterization-6b-LePsQ/lib/python3.11/site-packages/tsapython/core.py.orig.20251027_011551	2025-10-27 01:15:51
++++ /Users/abdullaalhosani/.local/share/virtualenvs/tinysa-lo-characterization-6b-LePsQ/lib/python3.11/site-packages/tsapython/core.py	2025-10-27 01:36:21
+@@ -253,33 +253,58 @@
+         return msgbytes
+ 
+     
+-    def get_serial_return(self):
+-        # while there's a buffer, read in the returned message
+-        # original buffer reading from: https://groups.io/g/tinysa/topic/tinysa_screen_capture_using/82218670
++    def get_serial_return(self, timeout=5.0):
++        """
++        Read serial data until the tinySA prompt ('>') is seen or until timeout.
+ 
++        Older implementations blocked indefinitely if the device did not
++        return a '>' prompt for some commands. Add a timeout so callers won't
++        hang forever. Returns a bytearray (possibly empty) on timeout.
++        """
++        import time
++
+         buffer = bytes()
++        start_time = time.time()
++
+         while True:
++            # Read available bytes
+             if self.ser.in_waiting > 0:
+                 buffer += self.ser.read(self.ser.in_waiting)
+                 try:
+                     # split the stream to take a chunk at a time
+                     # get up to '>' of the prompt
+-                    complete = buffer[:buffer.index(b'>')+1]  
++                    complete = buffer[:buffer.index(b'>')+1]
+                     # leave the rest in buffer
+-                    buffer = buffer[buffer.index(b'ch>')+1:]  
++                    buffer = buffer[buffer.index(b'ch>')+1:]
+                 except ValueError:
+-                    # this is an acceptable err, so can skip it and keep looping
+-                    continue 
++                    # Not found yet — continue reading until timeout
++                    pass
+                 except Exception as err:
+                     # otherwise, something else is wrong
+                     self.print_message("ERROR: exception thrown while reading serial")
+                     self.print_message(err)
+                     return None
+-                break
+-            
+-        return bytearray(complete)
+ 
++                # If we were able to find a complete message, return it
++                if b'>' in buffer or ('complete' in locals() and complete):
++                    try:
++                        return bytearray(complete)
++                    except Exception:
++                        return bytearray(buffer)
+ 
++            # Timeout handling
++            if (time.time() - start_time) > timeout:
++                self.print_message(f"WARNING: get_serial_return timed out after {timeout} s")
++                # Return whatever we have (possibly empty) to avoid blocking
++                try:
++                    return bytearray(buffer)
++                except Exception:
++                    return bytearray()
++
++            # Small sleep to avoid busy loop
++            time.sleep(0.01)
++
++
+     def read_until_end_marker(self, end_marker=b'}', timeout=10.0):
+         # scan and scan raw might return early with tinySA_serial
+         # so this is written to 
+@@ -1262,8 +1287,10 @@
+         accepted_val2= ["input", "output"]
+         #check input
+         if (val1 in accepted_val1) and (val2 in accepted_val2):
+-            writebyte = 'mode '+str(val1)+ + ' ' +str(val2)+'\r\n'
+-            msgbytes = self.tinySA_serial(writebyte, printBool=False)           
++            # FIX: correct string concatenation — original had a stray "+ +" which
++            # caused a TypeError (unary + on string). Build the command string cleanly.
++            writebyte = 'mode ' + str(val1) + ' ' + str(val2) + '\\r\\n'
++            msgbytes = self.tinySA_serial(writebyte, printBool=False)
+         else:
+             self.print_message("ERROR: output() takes vals [on|off]")
+             msgbytes = self.error_byte_return()

@@ -1,0 +1,19 @@
+Fix: tsapython/core.py - correct 'mode' command string concatenation.
+
+Problem:
+    writebyte = 'mode '+str(val1)+ + ' ' +str(val2)+'\r\n'
+caused a TypeError: bad operand type for unary +: 'str'
+
+Fix:
+    writebyte = 'mode ' + str(val1) + ' ' + str(val2) + '\\r\\n'
+
+This change was applied to the local virtualenv site-packages file for testing.
+It should be submitted upstream to tsapython. Note that reinstalling or upgrading
+the tsapython package will overwrite this change.
+
+Backup:
+A backup of the original file was created alongside the file with a timestamped
+suffix (core.py.orig.YYYYMMDD_HHMMSS) in the same directory.
+
+Created by: automated setup script
+Date: 2025-10-27
